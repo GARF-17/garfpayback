@@ -7,13 +7,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "sesion_usuario", schema = "identidad")
 public class SesionUsuario {
 
@@ -50,8 +48,8 @@ public class SesionUsuario {
 
     @CreatedDate
     @Column(name = "login_el", updatable = false)
-    private LocalDateTime loginEl;
+    private OffsetDateTime loginEl;
 
     @Column(name = "logout_el")
-    private LocalDateTime logoutEl;
+    private OffsetDateTime logoutEl;
 }

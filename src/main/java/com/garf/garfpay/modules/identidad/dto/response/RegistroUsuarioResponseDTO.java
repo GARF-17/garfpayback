@@ -1,6 +1,6 @@
 package com.garf.garfpay.modules.identidad.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record RegistroUsuarioResponseDTO(
@@ -8,5 +8,5 @@ public record RegistroUsuarioResponseDTO(
         String nombreUsuario,
         String correo,
         String estado,
-        LocalDateTime creadoEl
+        OffsetDateTime creadoEl
 ) {}

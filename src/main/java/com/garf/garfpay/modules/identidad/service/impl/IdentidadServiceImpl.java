@@ -23,6 +23,7 @@ import com.garf.garfpay.modules.identidad.repository.UsuarioAppRepository;
 import com.garf.garfpay.modules.identidad.service.IIdentidadService;
 import com.garf.garfpay.shared.exception.BusinessRuleException;
 import com.garf.garfpay.shared.exception.ConflictException;
+import com.garf.garfpay.shared.exception.UnauthorizedException;
 import com.garf.garfpay.shared.security.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
@@ -113,10 +115,9 @@ public class IdentidadServiceImpl implements IIdentidadService {
         }
 
         usuario.setIntentosFallidosLogin(0);
-        usuario.setUltimoLoginEl(LocalDateTime.now());
+        usuario.setUltimoLoginEl(OffsetDateTime.now());
         usuarioAppRepository.save(usuario);
 
-        // Extraer los roles reales de la BD y pasarlos al JWT
         String[] rolesArray = usuario.getRoles().stream()
                 .map(ur -> ur.getRol().getCodigo())
                 .toArray(String[]::new);
@@ -150,7 +151,7 @@ public class IdentidadServiceImpl implements IIdentidadService {
                 .direccionIp(ipAddress)
                 .agenteUsuario(userAgent)
                 .estaActiva(true)
-                .loginEl(LocalDateTime.now())
+                .loginEl(OffsetDateTime.now())
                 .build();
         sesionUsuarioRepository.save(sesion);
 
@@ -199,7 +200,7 @@ public class IdentidadServiceImpl implements IIdentidadService {
         codigoVerificacionRepository.save(codigoEntity);
 
         System.out.println("=================================================");
-        System.out.println("📬 CÓDIGO OTP PARA " + usuario.getPerfil().getCorreo() + ": " + codigoSecreto);
+        System.out.println("CÓDIGO OTP PARA " + usuario.getPerfil().getCorreo() + ": " + codigoSecreto);
         System.out.println("=================================================");
     }
 
@@ -234,5 +235,31 @@ public class IdentidadServiceImpl implements IIdentidadService {
         usuarioAppRepository.save(usuario);
 
         return true;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LoginResponseDTO refrescarToken(String refreshToken) {
+        SesionUsuario sesion = sesionUsuarioRepository.findByHashTokenRefresco(refreshToken)
+                .filter(SesionUsuario::getEstaActiva)
+                .orElseThrow(() -> new UnauthorizedException("El token de sesión no es válido o ha expirado."));
+
+        UsuarioApp usuario = sesion.getUsuario();
+
+        String[] rolesArray = usuario.getRoles().stream()
+                .map(ur -> ur.getRol().getCodigo())
+                .toArray(String[]::new);
+
+        var userDetails = org.springframework.security.core.userdetails.User
+                .withUsername(usuario.getNombreUsuario())
+                .password(usuario.getClaveHash())
+                .roles(rolesArray)
+                .build();
+
+        String nuevoToken = jwtService.generateToken(userDetails);
+
+        return new LoginResponseDTO(nuevoToken, refreshToken, usuario.getUsuarioId(),
+                usuario.getPerfil().getNombres(), usuario.getPerfil().getApellidos(),
+                usuario.getPerfil().getCorreo(), rolesArray[0]);
     }
 }

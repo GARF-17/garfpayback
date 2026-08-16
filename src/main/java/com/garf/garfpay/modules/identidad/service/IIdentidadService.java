@@ -12,4 +12,5 @@ public interface IIdentidadService {
     LoginResponseDTO login(LoginRequestDTO request);
     void generarYEnviarCodigoVerificacion(SolicitarCodigoRequestDTO request);
     boolean validarCodigoVerificacion(ValidarCodigoRequestDTO request);
+    LoginResponseDTO refrescarToken(String refreshToken);
 }

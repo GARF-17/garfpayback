@@ -4,16 +4,13 @@ import com.garf.garfpay.modules.control_acceso.entity.UsuarioRol;
 import com.garf.garfpay.modules.identidad.enums.EstadoUsuario;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "usuario_app", schema = "identidad")
 public class UsuarioApp {
 
@@ -42,7 +39,7 @@ public class UsuarioApp {
     private Integer intentosFallidosLogin = 0;
 
     @Column(name = "ultimo_login_el")
-    private LocalDateTime ultimoLoginEl;
+    private OffsetDateTime ultimoLoginEl;
 
     @Builder.Default
     @Column(name = "mfa_habilitado")
@@ -51,19 +48,19 @@ public class UsuarioApp {
     @Column(name = "mfa_secreto")
     private String mfaSecreto;
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(name = "creado_el", updatable = false)
-    private LocalDateTime creadoEl;
+    private OffsetDateTime creadoEl;
 
     @Column(name = "actualizado_el")
-    private LocalDateTime actualizadoEl;
+    private OffsetDateTime actualizadoEl;
 
     @Column(name = "eliminado_el")
-    private LocalDateTime eliminadoEl;
+    private OffsetDateTime eliminadoEl;
 
     @PreUpdate
     protected void onUpdate() {
-        this.actualizadoEl = LocalDateTime.now();
+        this.actualizadoEl = OffsetDateTime.now();
     }
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)

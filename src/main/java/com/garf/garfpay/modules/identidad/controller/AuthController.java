@@ -36,7 +36,11 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Inicio de sesión exitoso", response));
     }
 
-    // --- NUEVOS ENDPOINTS DE VERIFICACIÓN OTP ---
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<LoginResponseDTO>> refrescarToken(@RequestParam String refreshToken) {
+        LoginResponseDTO response = identidadService.refrescarToken(refreshToken);
+        return ResponseEntity.ok(ApiResponse.success("Token renovado exitosamente", response));
+    }
 
     @PostMapping("/codigo/solicitar")
     public ResponseEntity<ApiResponse<Void>> solicitarCodigo(

@@ -4,14 +4,12 @@ import com.garf.garfpay.modules.identidad.enums.TipoDocumento;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "perfil_usuario", schema = "identidad")
 public class PerfilUsuario {
 
@@ -55,16 +53,16 @@ public class PerfilUsuario {
 
     @CreatedDate
     @Column(name = "creado_el", updatable = false)
-    private LocalDateTime creadoEl;
+    private OffsetDateTime creadoEl;
 
     @Column(name = "actualizado_el")
-    private LocalDateTime actualizadoEl;
+    private OffsetDateTime actualizadoEl;
 
     @Column(name = "eliminado_el")
-    private LocalDateTime eliminadoEl;
+    private OffsetDateTime eliminadoEl;
 
     @PreUpdate
     protected void onUpdate() {
-        this.actualizadoEl = LocalDateTime.now();
+        this.actualizadoEl = OffsetDateTime.now();
     }
 }
