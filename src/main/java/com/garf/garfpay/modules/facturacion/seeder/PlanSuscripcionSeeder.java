@@ -29,14 +29,15 @@ public class PlanSuscripcionSeeder implements CommandLineRunner {
 
             PlanSuscripcion mensual = PlanSuscripcion.builder()
                     .nombre("Plan Mensual Pro")
-                    .descripcion("Para comunidades, tipsters y empresas. Incluye 3 días de prueba gratis.")
+                    .descripcion("Para comunidades, tipsters y empresas. Incluye días de prueba gratis.")
                     .precio(new BigDecimal("3.90"))
                     .frecuencia(FrecuenciaSuscripcion.MENSUAL)
+                    .esPlanPorDefecto(true)
                     .build();
 
             planRepository.save(anual);
             planRepository.save(mensual);
-            System.out.println(" Planes de Facturación creados exitosamente.");
+            System.out.println("Planes de Facturación creados exitosamente.");
         }
     }
 }

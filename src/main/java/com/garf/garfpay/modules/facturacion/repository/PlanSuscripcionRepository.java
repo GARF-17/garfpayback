@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface PlanSuscripcionRepository extends JpaRepository<PlanSuscripcion, Long> {
     Optional<PlanSuscripcion> findByFrecuenciaAndEstaActivoTrue(FrecuenciaSuscripcion frecuencia);
+    Optional<PlanSuscripcion> findByEsPlanPorDefectoTrueAndEstaActivoTrue();
 }

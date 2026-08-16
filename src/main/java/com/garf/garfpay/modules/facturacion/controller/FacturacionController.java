@@ -23,17 +23,13 @@ public class FacturacionController {
 
     private final IFacturacionService facturacionService;
 
-    // ENDPOINTS PARA GARFPAY CORE (SÚPER ADMIN)
     @PostMapping("/planes")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<PlanSuscripcionResponseDTO>> crearPlanSuscripcion(
             @Valid @RequestBody CrearPlanRequestDTO request) {
-
-        // Aquí se llamaría al servicio para crear un plan nuevo (ej. "Plan Ultra VIP")
-        // PlanSuscripcionResponseDTO response = facturacionService.crearPlan(request);
-
+        PlanSuscripcionResponseDTO response = facturacionService.crearPlan(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Plan de suscripción creado exitosamente", null));
+                .body(ApiResponse.success("Plan de suscripción creado exitosamente", response));
     }
 
     @GetMapping("/planes")
@@ -47,12 +43,9 @@ public class FacturacionController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<SuscripcionOrganizacionResponseDTO>> asignarSuscripcionManual(
             @Valid @RequestBody SuscribirOrganizacionRequestDTO request) {
-
-        // Este endpoint es el "Plan B" por si el Super Admin necesita cobrarle a mano a un colegio
-        // SuscripcionOrganizacionResponseDTO response = facturacionService.asignarSuscripcionManual(request);
-
+        SuscripcionOrganizacionResponseDTO response = facturacionService.asignarSuscripcionManual(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Suscripción manual asignada a la organización", null));
+                .body(ApiResponse.success("Suscripción manual asignada a la organización", response));
     }
 
     // ENDPOINTS PARA EL CLIENTE (ORG_ADMIN / TESORERO)

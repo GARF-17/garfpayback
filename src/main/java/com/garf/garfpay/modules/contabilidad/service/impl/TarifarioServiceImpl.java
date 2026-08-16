@@ -11,11 +11,13 @@ import com.garf.garfpay.modules.tenant.entity.Organizacion;
 import com.garf.garfpay.modules.tenant.repository.OrganizacionRepository;
 import com.garf.garfpay.shared.exception.BusinessRuleException;
 import com.garf.garfpay.shared.exception.ResourceNotFoundException;
+import com.garf.garfpay.shared.util.MoneyUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -62,12 +64,35 @@ public class TarifarioServiceImpl implements ITarifarioService {
     @Override
     @Transactional(readOnly = true)
     public TarifarioResponseDTO obtenerTarifarioVigente(UUID organizacionId, NombreProveedor proveedor, OffsetDateTime fecha) {
+        Tarifario tarifario = buscarTarifarioAplicable(organizacionId, proveedor, fecha);
+        return mapper.toTarifarioResponse(tarifario);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calcularComision(UUID organizacionId, NombreProveedor proveedor, BigDecimal monto, OffsetDateTime fecha) {
+        Tarifario tarifario = buscarTarifarioAplicable(organizacionId, proveedor, fecha);
+
+        BigDecimal comisionVariable = monto.multiply(tarifario.getComisionPorcentaje());
+        BigDecimal comisionTotal = comisionVariable.add(tarifario.getComisionFija());
+
+        BigDecimal comisionFormateada = MoneyUtils.formatAmount(comisionTotal);
+
+        log.debug("Comisión calculada para org={} proveedor={} monto={} => comision={} (tarifario={})",
+                organizacionId, proveedor, monto, comisionFormateada, tarifario.getTarifarioId());
+
+        return comisionFormateada;
+    }
+
+    private Tarifario buscarTarifarioAplicable(UUID organizacionId, NombreProveedor proveedor, OffsetDateTime fecha) {
         List<Tarifario> tarifarios = tarifarioRepository.buscarTarifariosVigentes(organizacionId, proveedor, fecha);
 
         if (tarifarios.isEmpty()) {
-            throw new ResourceNotFoundException("No existe un tarifario vigente para el proveedor " + proveedor);
+            throw new BusinessRuleException(
+                    "No existe un tarifario vigente para el proveedor " + proveedor +
+                            ". No es posible procesar la transacción sin una tarifa configurada.");
         }
 
-        return mapper.toTarifarioResponse(tarifarios.get(0));
+        return tarifarios.get(0);
     }
 }

@@ -34,6 +34,10 @@ public class PlanSuscripcion {
     private FrecuenciaSuscripcion frecuencia;
 
     @Builder.Default
+    @Column(name = "es_plan_por_defecto")
+    private Boolean esPlanPorDefecto = false;
+
+    @Builder.Default
     @Column(name = "esta_activo")
     private Boolean estaActivo = true;
 
