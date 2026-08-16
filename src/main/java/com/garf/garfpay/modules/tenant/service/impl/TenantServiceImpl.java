@@ -1,29 +1,31 @@
 package com.garf.garfpay.modules.tenant.service.impl;
 
+import com.garf.garfpay.modules.auditoria.service.IAuditoriaService;
 import com.garf.garfpay.modules.control_acceso.entity.Rol;
 import com.garf.garfpay.modules.control_acceso.repository.RolRepository;
 import com.garf.garfpay.modules.facturacion.service.IFacturacionService;
 import com.garf.garfpay.modules.identidad.entity.UsuarioApp;
 import com.garf.garfpay.modules.identidad.repository.UsuarioAppRepository;
+import com.garf.garfpay.modules.tenant.dto.request.CambiarRolMiembroRequestDTO;
 import com.garf.garfpay.modules.tenant.dto.request.CrearCuentaLiquidacionRequestDTO;
 import com.garf.garfpay.modules.tenant.dto.request.CrearOrganizacionRequestDTO;
 import com.garf.garfpay.modules.tenant.dto.response.CuentaLiquidacionResponseDTO;
+import com.garf.garfpay.modules.tenant.dto.response.MiembroOrganizacionResponseDTO;
 import com.garf.garfpay.modules.tenant.dto.response.OrganizacionResponseDTO;
 import com.garf.garfpay.modules.tenant.entity.*;
 import com.garf.garfpay.modules.tenant.enums.EstadoOrganizacion;
 import com.garf.garfpay.modules.tenant.enums.TipoOrganizacion;
 import com.garf.garfpay.modules.tenant.mapper.TenantMapper;
-import com.garf.garfpay.modules.tenant.repository.AuditoriaCuentaLiquidacionRepository;
-import com.garf.garfpay.modules.tenant.repository.CuentaLiquidacionRepository;
-import com.garf.garfpay.modules.tenant.repository.MiembroOrganizacionRepository;
-import com.garf.garfpay.modules.tenant.repository.OrganizacionRepository;
+import com.garf.garfpay.modules.tenant.repository.*;
 import com.garf.garfpay.modules.tenant.service.ITenantService;
 import com.garf.garfpay.shared.exception.BusinessRuleException;
 import com.garf.garfpay.shared.exception.ConflictException;
+import com.garf.garfpay.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -38,6 +40,8 @@ public class TenantServiceImpl implements ITenantService {
     private final RolRepository rolRepository;
     private final TenantMapper tenantMapper;
     private final IFacturacionService facturacionService;
+    private final HistorialRolMiembroRepository historialRolMiembroRepository;
+    private final IAuditoriaService auditoriaService;
 
     @Override
     @Transactional
@@ -72,6 +76,36 @@ public class TenantServiceImpl implements ITenantService {
 
         miembroOrganizacionRepository.save(miembro);
 
+        // ASCENSO GLOBAL AUTOMÁTICO
+        boolean tieneRolGlobal = usuarioCreador.getRoles().stream()
+                .anyMatch(ur -> ur.getRol().getCodigo().equals(codigoRol));
+
+        if (!tieneRolGlobal) {
+
+            // Si le vamos a dar el poder de ORG_ADMIN, le quitamos el de USER básico de la base de datos
+            if (codigoRol.equals("ORG_ADMIN")) {
+                usuarioCreador.getRoles().removeIf(ur -> ur.getRol().getCodigo().equals("USER"));
+            }
+
+            // Instanciamos la llave compuesta explícitamente para que Hibernate no explote
+            com.garf.garfpay.modules.control_acceso.entity.UsuarioRolId nuevoId =
+                    new com.garf.garfpay.modules.control_acceso.entity.UsuarioRolId(
+                            usuarioCreador.getUsuarioId(),
+                            rolAsignado.getRolId()
+                    );
+
+            com.garf.garfpay.modules.control_acceso.entity.UsuarioRol nuevoRolGlobal =
+                    com.garf.garfpay.modules.control_acceso.entity.UsuarioRol.builder()
+                            .id(nuevoId)
+                            .usuario(usuarioCreador)
+                            .rol(rolAsignado)
+                            .build();
+
+            // Guardamos el cambio en el usuario principal
+            usuarioCreador.getRoles().add(nuevoRolGlobal);
+            usuarioRepository.save(usuarioCreador);
+        }
+
         return tenantMapper.toOrganizacionResponse(organizacion);
     }
 
@@ -82,7 +116,6 @@ public class TenantServiceImpl implements ITenantService {
         Organizacion organizacion = organizacionRepository.findById(organizacionId)
                 .orElseThrow(() -> new BusinessRuleException("La organización no existe."));
 
-        // Bloquear si no está aprobada
         if (organizacion.getEstado() != EstadoOrganizacion.ACTIVA) {
             throw new BusinessRuleException("La organización está en revisión (SUSPENDIDA). No puede registrar cuentas bancarias ni operar hasta que GarfPay apruebe su solicitud.");
         }
@@ -113,7 +146,6 @@ public class TenantServiceImpl implements ITenantService {
         return tenantMapper.toCuentaLiquidacionResponse(cuenta);
     }
 
-    // Solo el Administrador usará esto
     @Override
     @Transactional
     public OrganizacionResponseDTO activarOrganizacion(UUID organizacionId) {
@@ -131,5 +163,43 @@ public class TenantServiceImpl implements ITenantService {
     private boolean tieneRolGlobal(UsuarioApp usuario, String codigoRolGlobal) {
         return usuario.getRoles().stream()
                 .anyMatch(ur -> ur.getRol().getCodigo().equals(codigoRolGlobal));
+    }
+
+    @Transactional
+    public MiembroOrganizacionResponseDTO cambiarRolMiembro(UUID organizacionId, UUID usuarioId,
+                                                            CambiarRolMiembroRequestDTO request,
+                                                            String nombreUsuarioEjecutor) {
+
+        MiembroOrganizacion miembro = miembroOrganizacionRepository
+                .findById(new MiembroOrganizacionId(organizacionId, usuarioId))
+                .orElseThrow(() -> new ResourceNotFoundException("El usuario no es miembro de esta organización."));
+
+        UsuarioApp ejecutor = usuarioRepository.findByNombreUsuario(nombreUsuarioEjecutor)
+                .orElseThrow(() -> new BusinessRuleException("Usuario ejecutor no encontrado."));
+
+        Rol rolAnterior = miembro.getRol();
+        Rol rolNuevo = rolRepository.findById(request.rolNuevoId())
+                .orElseThrow(() -> new BusinessRuleException("El rol especificado no existe."));
+
+        if (rolAnterior.getRolId().equals(rolNuevo.getRolId())) {
+            throw new BusinessRuleException("El miembro ya tiene asignado ese rol.");
+        }
+
+        miembro.setRol(rolNuevo);
+        miembroOrganizacionRepository.save(miembro);
+
+        HistorialRolMiembro historial = HistorialRolMiembro.builder()
+                .miembro(miembro)
+                .rolAnterior(rolAnterior)
+                .rolNuevo(rolNuevo)
+                .cambiadoPor(ejecutor)
+                .build();
+        historialRolMiembroRepository.save(historial);
+
+        auditoriaService.registrarAccionInterna(
+                ejecutor.getUsuarioId(), "TENANT", "CAMBIO_ROL_MIEMBRO", "MiembroOrganizacion", null,
+                Map.of("rolAnterior", rolAnterior.getCodigo()), Map.of("rolNuevo", rolNuevo.getCodigo()), null, null);
+
+        return tenantMapper.toMiembroResponse(miembro);
     }
 }
