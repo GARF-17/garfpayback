@@ -1,0 +1,25 @@
+security:
+  jwt:
+    secret-key: 5465737453656372657450617261507275656261734775616e746531323334
+    expiration-time: 3600000
+    refresh-expiration-time: 86400000
+  login:
+    max-attempts: 3
+  verification-code:
+    expiration-minutes: 15
+    max-attempts: 3
+
+app:
+  admin:
+    nombres: Test
+    apellidos: Admin
+    documento: "99999999"
+    correo: test-admin@garfpay.com
+    username: testadmin
+    password: TestAdmin2026!
+  cors:
+    allowed-origins:
+      - "http://localhost:3000"
+
+facturacion:
+  dias-prueba-gratis: 3

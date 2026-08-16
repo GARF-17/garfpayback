@@ -33,6 +33,8 @@ security:
     max-attempts: 3
 
 app:
+  cors:
+    allowed-origins: "http://localhost:4200,http://localhost:8081"
   admin:
     nombres: "GarfPay"
     apellidos: "Admin"
@@ -40,3 +42,12 @@ app:
     correo: ${ADMIN_CORREO:admin@garfpay.com}
     username: ${ADMIN_USERNAME:superadmin}
     password: ${ADMIN_PASSWORD:AdminGarfpay2026!}
+
+facturacion:
+  dias-prueba-gratis: 7
+
+psp:
+  niubiz:
+    base-url: "https://apitestenv.vnforapps.com"
+    merchant-id: "456879852"
+    access-key: "Basic aW50ZWdyYWNpb25lc0BuaXViaXouY29tLnBlOl83ejNAOGZG"
