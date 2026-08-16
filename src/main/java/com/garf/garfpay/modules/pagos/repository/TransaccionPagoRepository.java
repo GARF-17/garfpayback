@@ -1,6 +1,7 @@
 package com.garf.garfpay.modules.pagos.repository;
 
 import com.garf.garfpay.modules.pagos.entity.TransaccionPago;
+import com.garf.garfpay.modules.pagos.enums.NombreProveedor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,4 +24,6 @@ public interface TransaccionPagoRepository extends JpaRepository<TransaccionPago
             @Param("organizacionId") UUID organizacionId,
             @Param("fechaInicio") OffsetDateTime fechaInicio,
             @Param("fechaFin") OffsetDateTime fechaFin);
+
+    Optional<TransaccionPago> findByProveedorAndIdTransaccionProveedor(NombreProveedor proveedor, String idTransaccionProveedor);
 }

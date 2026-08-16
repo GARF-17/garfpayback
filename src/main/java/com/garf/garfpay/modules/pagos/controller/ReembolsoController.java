@@ -20,7 +20,7 @@ public class ReembolsoController {
     private final IReembolsoService reembolsoService;
 
     @PostMapping("/reembolsos")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'TREASURER')")
     public ResponseEntity<ApiResponse<ReembolsoResponseDTO>> solicitarReembolso(
             @Valid @RequestBody SolicitarReembolsoRequestDTO request,
             Authentication authentication) {

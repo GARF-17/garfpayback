@@ -24,7 +24,8 @@ public class SolicitudCobroController {
     private final ISolicitudCobroService solicitudCobroService;
 
     @PostMapping("/organizaciones/{organizacionId}/solicitudes")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'TREASURER')")
+    @PreAuthorize("@tenantGuard.tieneRolEnOrganizacion(#organizacionId, authentication, 'ORG_ADMIN', 'TREASURER') " +
+            "or hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<SolicitudCobroResponseDTO>> crearSolicitud(
             @PathVariable UUID organizacionId,
             @Valid @RequestBody CrearSolicitudCobroRequestDTO request,
